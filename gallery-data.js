@@ -1,9 +1,9 @@
 const galleries = {
-  "Bonbons": [],
-  "Butterflies": [],
-  "Ribbons": [],
-  "Glitters": [],
-  "Fruits": [],
+  "blackout-curtains": [],
+  "roller-blinds": [],
+  "roman-blinds": [],
+  "sheers": [],
+  "venetian-blinds": [],
   "vertical-blinds": [],
   "motorized-blinds": [],
   "motorized-curtains": []
