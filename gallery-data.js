@@ -1,5 +1,5 @@
 const galleries = {
-  "blackout-curtains": [],
+  "Bonbons": [],
   "roller-blinds": [],
   "roman-blinds": [],
   "sheers": [],
