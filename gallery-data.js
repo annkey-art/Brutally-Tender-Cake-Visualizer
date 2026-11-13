@@ -1,6 +1,10 @@
 const galleries = {
-  "wedding": [],
-  "birthday": [],
-  "corporate": [],
-  "occasion": []
+  "blackout-curtains": [],
+  "roller-blinds": [],
+  "roman-blinds": [],
+  "sheers": [],
+  "venetian-blinds": [],
+  "vertical-blinds": [],
+  "motorized-blinds": [],
+  "motorized-curtains": []
 };
