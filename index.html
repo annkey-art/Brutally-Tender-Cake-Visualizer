@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Brurally Tender Cake Visualizer</title>
+  <title>Brutally Tender Cake Visualizer</title>
 
   <style>
     body {
@@ -38,7 +38,7 @@
 
     .card {
       background: #0F1E46;
-      border: #D4A63A;
+      border: 1px solid #D4A63A;
       border-radius: 20px;
       padding: 18px;
       margin-bottom: 18px;
@@ -110,14 +110,19 @@
   display: none;
   pointer-events: none;
 }
-    .status {
-      background: #efe5d8;
+    .status { color:#F7F7F7; background: #0B1430;
       padding: 12px;
       border-radius: 14px;
       margin-top: 12px;
       font-size: 15px;
     }
-  </style>
+  
+.decoration-choices{display:grid;grid-template-columns:repeat(auto-fill,minmax(95px,1fr));gap:8px;margin-top:12px}
+.decoration-item{background:#0B1430;color:#F7F7F7;border:1px solid #D4A63A;min-height:125px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:7px}
+.decoration-item img{width:78px;height:78px;object-fit:contain}
+.decoration-item span{font-size:12px;overflow-wrap:anywhere}
+#curtainOverlay{cursor:grab;pointer-events:auto;touch-action:none}
+</style>
 </head>
 
 <body>
@@ -174,68 +179,65 @@
     </section>
 
     <section class="card">
-      <h2>Choose Decoration Type</h2>
-<button onclick="selectStyle('Bonbons')">
-  bonbon
-</button>
-
-<button onclick="selectStyle('blackout-curtains-cream')">
-  Blackout Curtains Cream
-</button>
-  
-      <button onclick="selectStyle('sheer-curtains')">Sheer-Curtains</button>
-      <button onclick="selectStyle('Blackout-Sheer')">Blackout-Sheer</button>
-      <button onclick="selectStyle('roller-blinds')">Roller-Blinds</button>
-      <button onclick="selectStyle('roman-blinds')">Roman-Blinds</button>
-      <button onclick="selectStyle('vertical-blinds')">Vertical-Blinds</button>
-      <button onclick="selectStyle('wooden-blinds')">Wooden-Blinds</button>
-      
-    </section>
+<h2>Choose Decorations</h2>
+<p>Choose a category, then tap an image to place it on your cake.</p>
+<div id="decorationCategories" class="control-grid"></div>
+<div id="decorationChoices" class="decoration-choices"></div>
+<div class="status" id="decorationStatus">Select a category.</div>
+</section>
 
     <section class="card">
-      <h2>Project Gallery</h2>
-
-
-      <button onclick="openGallery('blackout-curtains')">blackout-curtains</button>
-      <button onclick="openGallery('sheers')">sheers</button>
-      <button onclick="openGallery('roman-blinds')">roman-blinds</button>
-      <button onclick="openGallery('roller-blinds')">roller-blinds</button>
-      <button onclick="openGallery('venetian-blinds')">venetian-blinds</button>
-      <button onclick="openGallery('vertical-blinds')">vertical-blinds</button>
-      <button onclick="openGallery('motorized-curtains')">motorized-curtains</button>
-      <button onclick="openGallery('motorized-blinds')">motorized-blinds</button>
-
-      <div class="status" id="galleryStatus">
-  Choose a gallery category.
+<h2>Project Gallery</h2>
+<div class="control-grid" id="cakeGalleryCategories">
+<button onclick="openGallery('wedding')">Wedding Cakes</button>
+<button onclick="openGallery('birthday')">Birthday Cakes</button>
+<button onclick="openGallery('corporate')">Corporate Cakes</button>
+<button onclick="openGallery('occasion')">Occasion Cakes</button>
 </div>
-
-<img id="galleryImage"
-     src=""
-     style="width:100%; margin-top:15px; border-radius:12px; display:none;">
-<video id="galleryVideo"
-       controls
-       playsinline
-       style="width:100%; margin-top:15px; border-radius:12px; display:none;">
-</video>
-<div class="control-grid">
-  <button onclick="previousImage()">⬅️ Previous</button>
-  <button onclick="nextImage()">➡️ Next</button>
-</div>
-     
-    </section>
+<div class="status" id="galleryStatus">Choose a gallery category.</div>
+<img id="galleryImage" src="" alt="Cake gallery photo" style="width:100%;margin-top:15px;border-radius:12px;display:none;">
+<video id="galleryVideo" controls playsinline style="width:100%;margin-top:15px;border-radius:12px;display:none;"></video>
+<div class="control-grid"><button onclick="previousImage()">← Previous</button><button onclick="nextImage()">Next →</button></div>
+</section>
 
   </main>
+<script src="decorations-data.js"></script>
 <script src="gallery-data.js"></script>
 <script>
-const overlays = {
-  "blackout-curtains": "gallery/overlays/blackout-overlay.png",
-  "blackout-curtains-cream": "gallery/overlays/blackout-overlays-cream.png",
-  "sheer-curtains": "gallery/overlays/sheer-overlays.png",
-  "roller-blinds": "gallery/overlays/roller-overlay.png",
-  "roman-blinds": "gallery/overlays/roman-blind-overlay.png",
-  "vertical-blinds": "gallery/overlays/vertical-overlay.png",
-  "wooden-blinds": "gallery/overlays/venetian-overlays.png"
-};
+const decorationGroups=["Bonbons","Butterflies","Fruits","Ribbons","Glitters","Pearls"];
+let activeDecorationGroup="Bonbons";
+function chooseDecorationGroup(cat) {
+ activeDecorationGroup=cat;
+ const holder=document.getElementById("decorationChoices");
+ const status=document.getElementById("decorationStatus");
+ holder.replaceChildren();
+ const items=(typeof decorationCatalog!=="undefined" && decorationCatalog[cat])||[];
+ if(items.length===0) {
+  status.textContent="No "+cat.toLowerCase()+" PNGs yet. Add your pictures to gallery/overlays/"+cat+"/ on GitHub.";
+  return;
+ }
+ status.textContent=items.length+" available decorations.";
+ items.forEach(path=>{
+  const btn=document.createElement("button");
+  btn.className="decoration-item";
+  const pic=document.createElement("img");
+  pic.src=path;pic.alt="";
+  const caption=document.createElement("span");
+  caption.textContent=path.split("/").pop().replace(/\.png$/i,"").replace(/_/g," ");
+  btn.append(pic,caption);
+  btn.addEventListener("click",()=>selectStyle(path));
+  holder.append(btn);
+ });
+}
+document.addEventListener("DOMContentLoaded",()=>{
+ const holder=document.getElementById("decorationCategories");
+ decorationGroups.forEach(cat=>{
+  const b=document.createElement("button");
+  b.textContent=cat;b.addEventListener("click",()=>chooseDecorationGroup(cat));
+  holder.append(b);
+ });
+ chooseDecorationGroup("Bonbons");
+});
 
 let overlayX = 20;
 let overlayY = 20;
@@ -271,17 +273,12 @@ function resizeOverlay(action) {
   updateOverlayPosition();
 }
 
-function selectStyle(styleName) {
-  document.getElementById("selectedStyle").innerText =
-    "Selected style: " + styleName;
-
-  const overlay = document.getElementById("curtainOverlay");
-
-  if (overlays[styleName]) {
-    overlay.src = overlays[styleName];
-    overlay.style.display = "block";
-    updateOverlayPosition();
-  }
+function selectStyle(path) {
+ const overlay=document.getElementById("curtainOverlay");
+ overlay.src=path;
+ overlay.style.display="block";
+ updateOverlayPosition();
+ document.getElementById("selectedStyle").textContent="Selected: "+path.split("/").pop().replace(/_/g," ");
 }
 function showGalleryItem(file) {
   const galleryImage = document.getElementById("galleryImage");
@@ -399,7 +396,7 @@ function downloadPreview() {
       const downloadLink = document.createElement("a");
 
       downloadLink.href = objectUrl;
-      downloadLink.download = "alef-noon-client-preview.png";
+      downloadLink.download = "brutally-tender-cake-preview.png";
 
       document.body.appendChild(downloadLink);
       downloadLink.click();
@@ -412,6 +409,20 @@ function downloadPreview() {
     "image/png"
   );
 }
+(function(){
+ let pointer=null,startX=0,startY=0,baseX=0,baseY=0;
+ const overlay=document.getElementById("curtainOverlay");
+ overlay.addEventListener("pointerdown",e=>{
+  pointer=e.pointerId;startX=e.clientX;startY=e.clientY; baseX=overlayX;baseY=overlayY;
+  overlay.setPointerCapture(pointer);e.preventDefault();
+ });
+ overlay.addEventListener("pointermove",e=>{
+  if(pointer!==e.pointerId)return;
+  overlayX=baseX+e.clientX-startX;overlayY=baseY+e.clientY-startY;updateOverlayPosition();
+ });
+ overlay.addEventListener("pointerup",e=>{if(pointer===e.pointerId)pointer=null;});
+ overlay.addEventListener("pointercancel",e=>{if(pointer===e.pointerId)pointer=null;});
+})();
 </script>
 
 
