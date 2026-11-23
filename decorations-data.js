@@ -16,7 +16,12 @@ const decorationCatalog = {
     "gallery/overlays/Bonbons/maccaroni_purple.png"
   ],
   "Butterflies": [],
-  "Fruits": [],
+  "Fruits": [
+    "gallery/overlays/Fruits/cherry_gold.png",
+    "gallery/overlays/Fruits/cherry_red.png",
+    "gallery/overlays/Fruits/strawberry_chocolate.png",
+    "gallery/overlays/Fruits/strawberry_red.png"
+  ],
   "Ribbons": [
     "gallery/overlays/Ribbons/flower_cream.png",
     "gallery/overlays/Ribbons/flower_gold.png",
