@@ -1,5 +1,7 @@
 const galleries = {
-  "wedding": [],
+  "wedding": [
+    "gallery/cakes/wedding/red_cake.png"
+  ],
   "birthday": [
     "gallery/cakes/birthday/two_lier_cake.png"
   ],
