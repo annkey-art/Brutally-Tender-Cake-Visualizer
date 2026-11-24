@@ -102,14 +102,9 @@
   display: none;
 }
 
-#curtainOverlay {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  width: 45%;
-  display: none;
-  pointer-events: none;
-}
+#decorationLayers{position:absolute;inset:0;pointer-events:none}
+.cake-decoration{position:absolute;display:block;height:auto;cursor:grab;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-drag:none}
+.cake-decoration.selected{outline:2px dashed #D4A63A;outline-offset:3px}
     .status { color:#F7F7F7; background: #0B1430;
       padding: 12px;
       border-radius: 14px;
@@ -121,7 +116,7 @@
 .decoration-item{background:#0B1430;color:#F7F7F7;border:1px solid #D4A63A;min-height:125px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:7px}
 .decoration-item img{width:78px;height:78px;object-fit:contain}
 .decoration-item span{font-size:12px;overflow-wrap:anywhere}
-#curtainOverlay{cursor:grab;pointer-events:auto;touch-action:none}
+
 </style>
 </head>
 
@@ -160,7 +155,7 @@
 
      <div class="preview-box">
   <img id="previewImage" />
-  <img id="curtainOverlay" />
+  <div id="decorationLayers" aria-label="Cake decorations"></div>
 </div>
       <div class="status" id="selectedStyle">
         No  decoration selected yet.
@@ -174,6 +169,8 @@
   <button onclick="moveOverlay('right')">➡️ Right</button>
   <button onclick="resizeOverlay('bigger')">➕ Bigger</button>
   <button onclick="resizeOverlay('smaller')">➖ Smaller</button>
+<button onclick="removeSelectedDecoration()">🗑️ Remove Selected</button>
+<button onclick="clearDecorations()">🧹 Clear Decorations</button>
 <button onclick="downloadPreview()">⬇️ Download Client Preview</button>
 </div>
     </section>
@@ -239,46 +236,112 @@ document.addEventListener("DOMContentLoaded",()=>{
  chooseDecorationGroup("Bonbons");
 });
 
-let overlayX = 20;
-let overlayY = 20;
-let overlaySize = 45;
-
+let decorations=[];
+let selectedDecorationId=null;
+let nextDecorationId=1;
+let photoObjectUrl=null;
 let currentGallery = [];
 let currentGalleryIndex = 0;
 
 function showImage(event) {
-  const image = document.getElementById("previewImage");
-  image.src = URL.createObjectURL(event.target.files[0]);
-  image.style.display = "block";
+  const file=event.target.files && event.target.files[0];
+  if(!file)return;
+  if(!file.type.startsWith("image/"))return;
+  if(photoObjectUrl)URL.revokeObjectURL(photoObjectUrl);
+  photoObjectUrl=URL.createObjectURL(file);
+  const image=document.getElementById("previewImage");
+  image.src=photoObjectUrl;
+  image.style.display="block";
+  clearDecorations();
 }
 
-function updateOverlayPosition() {
-  const overlay = document.getElementById("curtainOverlay");
-  overlay.style.left = overlayX + "px";
-  overlay.style.top = overlayY + "px";
-  overlay.style.width = overlaySize + "%";
+function selectedDecoration(){
+  return decorations.find(d=>d.id===selectedDecorationId)||null;
 }
-
-function moveOverlay(direction) {
-  if (direction === "left") overlayX -= 10;
-  if (direction === "right") overlayX += 10;
-  if (direction === "up") overlayY -= 10;
-  if (direction === "down") overlayY += 10;
-  updateOverlayPosition();
+function refreshDecorationPositions(){
+  decorations.forEach(d=>{
+    d.element.style.left=d.x+"%";
+    d.element.style.top=d.y+"%";
+    d.element.style.width=d.width+"%";
+    d.element.classList.toggle("selected",d.id===selectedDecorationId);
+  });
+  const selected=selectedDecoration();
+  document.getElementById("selectedStyle").textContent=selected
+    ? "Selected: "+selected.name+" | "+decorations.length+" decoration(s) on cake"
+    : decorations.length+" decoration(s) on cake. Tap one to select it.";
 }
-
-function resizeOverlay(action) {
-  if (action === "bigger") overlaySize += 5;
-  if (action === "smaller") overlaySize -= 5;
-  updateOverlayPosition();
+function moveOverlay(direction){
+  const d=selectedDecoration();
+  if(!d){document.getElementById("selectedStyle").textContent="Choose a decoration first.";return}
+  const step=2;
+  if(direction==="left")d.x-=step;
+  if(direction==="right")d.x+=step;
+  if(direction==="up")d.y-=step;
+  if(direction==="down")d.y+=step;
+  refreshDecorationPositions();
 }
-
-function selectStyle(path) {
- const overlay=document.getElementById("curtainOverlay");
- overlay.src=path;
- overlay.style.display="block";
- updateOverlayPosition();
- document.getElementById("selectedStyle").textContent="Selected: "+path.split("/").pop().replace(/_/g," ");
+function resizeOverlay(action){
+  const d=selectedDecoration();
+  if(!d){document.getElementById("selectedStyle").textContent="Choose a decoration first.";return}
+  d.width=Math.max(3,Math.min(150,d.width+(action==="bigger"?5:-5)));
+  refreshDecorationPositions();
+}
+function removeSelectedDecoration(){
+  const index=decorations.findIndex(d=>d.id===selectedDecorationId);
+  if(index===-1)return;
+  decorations[index].element.remove();
+  decorations.splice(index,1);
+  selectedDecorationId=decorations.length?decorations[decorations.length-1].id:null;
+  refreshDecorationPositions();
+}
+function clearDecorations(){
+  decorations.forEach(d=>d.element.remove());
+  decorations=[];
+  selectedDecorationId=null;
+  refreshDecorationPositions();
+}
+function selectStyle(path){
+  const image=document.getElementById("previewImage");
+  if(!image.src||image.style.display==="none"){
+    document.getElementById("selectedStyle").textContent="Please upload a cake photo first.";
+    return;
+  }
+  const container=document.getElementById("decorationLayers");
+  const img=document.createElement("img");
+  img.className="cake-decoration";
+  img.alt="Cake decoration";
+  img.draggable=false;
+  const d={
+    id:nextDecorationId++,src:path,
+    name:path.split("/").pop().replace(/_/g," "),
+    x:25,y:25,width:35,element:img
+  };
+  let pointerId=null,startX=0,startY=0,baseX=0,baseY=0;
+  img.addEventListener("pointerdown",e=>{
+    selectedDecorationId=d.id;
+    pointerId=e.pointerId;
+    startX=e.clientX;startY=e.clientY;
+    baseX=d.x;baseY=d.y;
+    img.setPointerCapture(e.pointerId);
+    refreshDecorationPositions();
+    e.preventDefault();
+  });
+  img.addEventListener("pointermove",e=>{
+    if(pointerId!==e.pointerId)return;
+    const r=image.getBoundingClientRect();
+    if(!r.width||!r.height)return;
+    d.x=baseX+(e.clientX-startX)/r.width*100;
+    d.y=baseY+(e.clientY-startY)/r.height*100;
+    refreshDecorationPositions();
+  });
+  img.addEventListener("pointerup",e=>{if(pointerId===e.pointerId)pointerId=null});
+  img.addEventListener("pointercancel",e=>{if(pointerId===e.pointerId)pointerId=null});
+  img.addEventListener("error",()=>{document.getElementById("selectedStyle").textContent="Could not load "+d.name;});
+  decorations.push(d);
+  container.appendChild(img);
+  selectedDecorationId=d.id;
+  img.src=path;
+  refreshDecorationPositions();
 }
 function showGalleryItem(file) {
   const galleryImage = document.getElementById("galleryImage");
@@ -341,88 +404,42 @@ function previousImage() {
   `Showing: ${currentGalleryIndex + 1} / ${currentGallery.length}`;
 }
 
-function downloadPreview() {
-  const previewImage = document.getElementById("previewImage");
-  const overlay = document.getElementById("curtainOverlay");
-
-  if (!previewImage.src || previewImage.style.display === "none") {
-    alert("Please upload a customer photo first.");
-    return;
+async function downloadPreview(){
+  const photo=document.getElementById("previewImage");
+  if(!photo.naturalWidth||!photo.naturalHeight){
+    alert("Please upload a cake photo first.");return;
   }
-
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-
-  canvas.width = previewImage.naturalWidth;
-  canvas.height = previewImage.naturalHeight;
-
-  ctx.drawImage(
-    previewImage,
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
-
-  if (overlay.src && overlay.style.display !== "none") {
-    const imageRect = previewImage.getBoundingClientRect();
-    const overlayRect = overlay.getBoundingClientRect();
-
-    const scaleX = canvas.width / imageRect.width;
-    const scaleY = canvas.height / imageRect.height;
-
-    const exportX = (overlayRect.left - imageRect.left) * scaleX;
-    const exportY = (overlayRect.top - imageRect.top) * scaleY;
-    const exportWidth = overlayRect.width * scaleX;
-    const exportHeight = overlayRect.height * scaleY;
-
+  const canvas=document.createElement("canvas");
+  canvas.width=photo.naturalWidth;canvas.height=photo.naturalHeight;
+  const ctx=canvas.getContext("2d");
+  ctx.drawImage(photo,0,0,canvas.width,canvas.height);
+  const photoRect=photo.getBoundingClientRect();
+  if(!photoRect.width||!photoRect.height){
+    alert("Cannot measure cake preview.");return;
+  }
+  for(const d of decorations){
+    try{if(d.element.decode)await d.element.decode()}catch(e){continue}
+    if(!d.element.naturalWidth)continue;
+    const rect=d.element.getBoundingClientRect();
+    const scaleX=canvas.width/photoRect.width;
+    const scaleY=canvas.height/photoRect.height;
     ctx.drawImage(
-      overlay,
-      exportX,
-      exportY,
-      exportWidth,
-      exportHeight
+      d.element,
+      (rect.left-photoRect.left)*scaleX,
+      (rect.top-photoRect.top)*scaleY,
+      rect.width*scaleX,
+      rect.height*scaleY
     );
   }
-
-  canvas.toBlob(
-    function (blob) {
-      if (!blob) {
-        alert("The preview could not be created.");
-        return;
-      }
-
-      const objectUrl = URL.createObjectURL(blob);
-      const downloadLink = document.createElement("a");
-
-      downloadLink.href = objectUrl;
-      downloadLink.download = "brutally-tender-cake-preview.png";
-
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      downloadLink.remove();
-
-      setTimeout(function () {
-        URL.revokeObjectURL(objectUrl);
-      }, 1000);
-    },
-    "image/png"
-  );
+  canvas.toBlob(blob=>{
+    if(!blob){alert("Could not save preview.");return}
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement("a");
+    link.href=url;link.download="brutally-tender-cake-preview.png";
+    document.body.appendChild(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),2000);
+  },"image/png");
 }
-(function(){
- let pointer=null,startX=0,startY=0,baseX=0,baseY=0;
- const overlay=document.getElementById("curtainOverlay");
- overlay.addEventListener("pointerdown",e=>{
-  pointer=e.pointerId;startX=e.clientX;startY=e.clientY; baseX=overlayX;baseY=overlayY;
-  overlay.setPointerCapture(pointer);e.preventDefault();
- });
- overlay.addEventListener("pointermove",e=>{
-  if(pointer!==e.pointerId)return;
-  overlayX=baseX+e.clientX-startX;overlayY=baseY+e.clientY-startY;updateOverlayPosition();
- });
- overlay.addEventListener("pointerup",e=>{if(pointer===e.pointerId)pointer=null;});
- overlay.addEventListener("pointercancel",e=>{if(pointer===e.pointerId)pointer=null;});
-})();
 </script>
 
 
